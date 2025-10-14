@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan National Students Database - Admin</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        /* ... (CSS styles remain the same as previous response) ... */
+        :root {
+            --accent: #0ea5a4;
+            --accent-dark: #0d9488;
+            --muted: #64748b;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: var(--text-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .rounded-card {
+            border-radius: 16px;
+        }
+        
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .status-badge {
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #fff;
+            min-width: 100px;
+            justify-content: center;
+        }
+        
+        .badge-verified { background: var(--success); }
+        .badge-pending { background: var(--warning); }
+        .badge-rejected { background: var(--error); }
+        .badge-review { background: var(--info); }
+        
+        .border-verified { border-left-color: var(--success) !important; border-left-width: 6px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.15) !important; }
+        .border-pending { border-left-color: var(--warning) !important; border-left-width: 6px; box-shadow: 0 0 8px rgba(245, 158, 11, 0.1) !important; }
+        .border-rejected { border-left-color: var(--error) !important; border-left-width: 6px; box-shadow: 0 0 8px rgba(239, 68, 68, 0.1) !important; }
+        .border-review { border-left-color: var(--info) !important; border-left-width: 6px; box-shadow: 0 0 8px rgba(59, 130, 246, 0.1) !important; }
+        
+        .logo-container {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(45deg, var(--accent), var(--accent-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(14, 165, 164, 0.4);
+        }
+        
+        .search-result-card {
+            border: 1px solid var(--glass-border);
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        @media (min-width: 640px) {
+            .search-result-card {
+                grid-template-columns: 140px 1fr;
+            }
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 1rem;
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            width: 100%;
+            animation: zoomIn 0.3s;
+        }
+        
+        @media (min-width: 768px) {
+            .modal-content {
+                max-width: 850px;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .loading-icon {
+            color: var(--accent);
+            font-size: 1.5rem;
+            animation: fa-spin 1s infinite linear;
+        }
+        
+        /* ... (rest of the CSS remains mostly the same, ensuring the utility classes are available) ... */
+        
+        .form-input {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 12px;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.2);
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 165, 164, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: var(--text-color);
+            font-weight: 500;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+        
+        .btn-danger {
+            background-color: var(--error);
+            color: white;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-danger:hover {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .student-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 16px;
+        }
+        
+        @media (min-width: 768px) {
+            .student-detail-grid {
+                grid-template-columns: repeat(3, 1fr); /* Changed to 3 columns for better density */
+            }
+        }
+        
+        .detail-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .detail-label {
+            font-size: 0.8rem; /* Slightly larger */
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .detail-label i {
+            font-size: 1.1em; /* Larger icons */
+            margin-right: 8px;
+        }
+
+        .detail-value {
+            font-size: 1.05rem; /* Slightly larger */
+            font-weight: 500;
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="toast-container"></div>
+    
+    <header class="glass rounded-card max-w-7xl mx-auto mt-6 p-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="logo-container">PN</div>
+            <div>
+                <div class="text-xl font-bold">Pakistan National Students Database</div>
+                <div class="text-sm text-[--muted]">Student verification & administration</div>
+            </div>
+        </div>
+        
+        <div class="relative flex items-center gap-3">
+            <nav id="main-nav-buttons" class="flex items-center gap-3">
+                <button id="nav-search" class="px-4 py-2 text-sm rounded-lg hover:bg-gray-100 font-medium nav-active">Search</button> 
+            </nav>
+
+            <div id="user-session-container" class="relative ml-2">
+                <button id="btn-login" class="btn-primary">Login</button>
+
+                <button id="user-dropdown-toggle" class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg hover:bg-gray-100 font-medium hidden">
+                    <span id="session-display-text" class="text-sm font-semibold text-[--accent]">Admin</span>
+                    <i class="fas fa-caret-down text-[--muted]"></i>
+                </button>
+
+                <div id="user-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-[9999]">
+                    <div class="py-1">
+                        <div id="session-email" class="block px-4 py-2 text-sm text-gray-500 truncate font-semibold"></div>
+                        <button id="dropdown-btn-admin" class="w-full text-left block px-4 py-2 text-sm text-[--text-color] hover:bg-gray-100">Admin Panel</button>
+                        <button id="dropdown-btn-settings-logout" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto mt-6 px-4 pb-12 space-y-6">
+        <section id="section-search" class="glass rounded-card p-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold">Search Student Records</h1>
+                    <p class="text-sm text-[--muted] mt-1">Search by full name, roll number, or student ID.</p>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <input id="search-input" type="text" placeholder="Enter name, roll number, or student ID..." class="form-input flex-1" />
+                    <button id="search-btn" class="btn-primary"><i class="fas fa-search"></i> Search</button>
+                    <button id="clear-search" class="btn-secondary"><i class="fas fa-undo"></i> Clear</button>
+                </div>
+            </div>
+            <div id="search-results" class="grid gap-6 mt-6">
+                <div id="initial-search-message" class="text-[--muted] p-6 text-center text-lg">
+                    <i class="fas fa-search text-4xl mb-4 opacity-50"></i>
+                    <p>Enter a name, roll number, or student ID and click Search to view details.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-login" class="hidden flex items-center justify-center min-h-[40vh]">
+            <div class="glass rounded-card p-8 w-full max-w-sm mx-auto shadow-xl">
+                <h2 class="text-2xl font-bold mb-6 text-center text-[--accent]">Admin Login</h2>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-[--text-color] mb-1">Email Address</label>
+                        <input id="login-email" type="email" placeholder="admin@example.com" required class="form-input w-full" />
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-[--text-color] mb-1">Password</label>
+                        <input id="login-password" type="password" placeholder="********" required class="form-input w-full" />
+                    </div>
+                    <p id="login-error" class="text-sm text-red-600 hidden text-center pt-2"></p>
+                    <div class="flex gap-3 pt-2">
+                        <button type="submit" class="btn-primary flex-1">Sign In</button>
+                        <button id="cancel-login" type="button" class="btn-secondary flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="section-admin" class="hidden space-y-6">
+            <div class="glass rounded-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 id="student-form-title" class="text-xl font-bold">Add New Student</h2>
+                        <p class="text-sm text-[--muted]">Fill complete details (Admins only)</p>
+                    </div>
+                    <button id="btn-preview-form" class="btn-secondary">
+                        <i class="fas fa-eye mr-2"></i> Preview
+                    </button>
+                </div>
+
+                <form id="student-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <input type="hidden" id="student_id_edit">
+
+                    <div class="md:col-span-2">
+                        <label for="name" class="block text-sm font-medium text-[--text-color] mb-1">Full Name *</label>
+                        <input id="name" placeholder="e.g., Ali Khan" class="form-input w-full" required>
+                    </div>
+                    
+                    <div>
+                        <label for="roll_number" class="block text-sm font-medium text-[--text-color] mb-1">Roll Number *</label>
+                        <input id="roll_number" placeholder="e.g., 10123" class="form-input w-full" required>
+                    </div>
+                    
+                    <div>
+                        <label for="class" class="block text-sm font-medium text-[--text-color] mb-1">Class</label>
+                        <input id="class" placeholder="e.g., 9th A" class="form-input w-full">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label for="father_name" class="block text-sm font-medium text-[--text-color] mb-1">Father's Name</label>
+                        <input id="father_name" placeholder="e.g., Muhammad Waqas" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="father_contact" class="block text-sm font-medium text-[--text-color] mb-1">Father's Contact</label>
+                        <input id="father_contact" placeholder="e.g., 03XX-XXXXXXX" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="contact_number" class="block text-sm font-medium text-[--text-color] mb-1">Student Contact</label>
+                        <input id="contact_number" placeholder="Student Contact Number" class="form-input w-full">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label for="email_student" class="block text-sm font-medium text-[--text-color] mb-1">Student Email</label>
+                        <input id="email_student" placeholder="Student Email (optional)" type="email" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="gender" class="block text-sm font-medium text-[--text-color] mb-1">Gender</label>
+                        <select id="gender" class="form-input w-full">
+                            <option value="">Select Gender</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="blood_group" class="block text-sm font-medium text-[--text-color] mb-1">Blood Group</label>
+                        <input id="blood_group" placeholder="e.g., A+ or B-" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="dob" class="block text-sm font-medium text-[--text-color] mb-1">Date of Birth</label>
+                        <input id="dob" type="date" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="admission_date" class="block text-sm font-medium text-[--text-color] mb-1">Admission Date</label>
+                        <input id="admission_date" type="date" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="iq_level" class="block text-sm font-medium text-[--text-color] mb-1">IQ Level</label>
+                        <input id="iq_level" placeholder="e.g., 105 or High" class="form-input w-full">
+                    </div>
+                    
+                    <div>
+                        <label for="photo" class="block text-sm font-medium text-[--text-color] mb-1">Student Photo</label>
+                        <input id="photo" type="file" accept="image/*" class="form-input w-full" required>
+                    </div>
+                    
+                    <div>
+                        <label for="verification_status" class="block text-sm font-medium text-[--text-color] mb-1">Verification Status</label>
+                        <select id="verification_status" class="form-input w-full">
+                            <option value="verified">Verified</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="under_review">Under Review</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-4">
+                        <label for="address" class="block text-sm font-medium text-[--text-color] mb-1">Complete Address</label>
+                        <textarea id="address" placeholder="Street, City, District" class="form-input w-full" rows="3"></textarea>
+                    </div>
+
+                    <div class="md:col-span-4 flex justify-end gap-3 pt-2">
+                        <button type="submit" id="btn-submit-student" class="btn-primary">
+                            <i class="fas fa-plus-circle"></i> Add Student
+                        </button>
+                        <button id="btn-cancel-edit" type="button" class="btn-secondary hidden">
+                            <i class="fas fa-times-circle"></i> Cancel Edit
+                        </button>
+                        <button id="btn-reset" type="button" class="btn-secondary">
+                            <i class="fas fa-sync-alt"></i> Reset Form
+                        </button>
+                    </div>
+                </form>
+
+                <p id="form-message" class="text-sm mt-2 hidden"></p>
+            </div>
+
+            <div class="glass rounded-card p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <h3 class="text-xl font-bold">Manage All Students</h3>
+                    <div class="flex items-center gap-3">
+                        <button id="btn-refresh" class="btn-secondary">
+                            <i class="fas fa-redo"></i> Refresh List
+                        </button>
+                        <button id="btn-export" class="btn-primary bg-green-500 hover:bg-green-600">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name / ID</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll No.</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-list-body" class="bg-white divide-y divide-gray-200 text-sm">
+                            <tr>
+                                <td colspan="5" class="loading-container">
+                                    <i class="fas fa-spinner loading-icon mr-2"></i> Loading students...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="student-preview-modal" class="modal hidden">
+        <div class="modal-content">
+            <button id="modal-close-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">
+                <i class="fas fa-times-circle"></i>
+            </button>
+            <h3 class="text-2xl font-bold border-b pb-2 mb-4 text-[--accent]">Student Full Details</h3>
+            <div id="modal-body">
+                </div>
+        </div>
+    </div>
+
+    <div id="form-preview-modal" class="modal hidden">
+        <div class="modal-content">
+            <button id="form-preview-close-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">
+                <i class="fas fa-times-circle"></i>
+            </button>
+            <h3 class="text-2xl font-bold border-b pb-2 mb-4 text-[--accent]">Student Form Preview</h3>
+            <div id="form-preview-body">
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Supabase client
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        // Supabase configuration
+        // !!! REPLACE THESE WITH YOUR ACTUAL SUPABASE KEYS !!!
+        const SUPABASE_URL = 'https://gilsarbchgzjvcxgebcx.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpbHNhcmJjaGd6anZjeGdlYmN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjI0NjcsImV4cCI6MjA3NTkzODQ2N30.OAz6OxL0OvAuPgy1h2GR6G07RM1zTrIkCCVSDO9tW1Q';
+        const BUCKET_NAME = 'student-photos';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // DOM elements
+        const navSearch = document.getElementById('nav-search');
+        const btnLogin = document.getElementById('btn-login');
+        const userDropdownToggle = document.getElementById('user-dropdown-toggle');
+        const userDropdownMenu = document.getElementById('user-dropdown-menu');
+        const sessionEmail = document.getElementById('session-email');
+        const dropdownBtnAdmin = document.getElementById('dropdown-btn-admin');
+        const dropdownBtnSettingsLogout = document.getElementById('dropdown-btn-settings-logout');
+
+        const sectionSearch = document.getElementById('section-search');
+        const sectionLogin = document.getElementById('section-login');
+        const sectionAdmin = document.getElementById('section-admin');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const clearSearch = document.getElementById('clear-search');
+        const searchResults = document.getElementById('search-results');
+        const initialSearchMessage = document.getElementById('initial-search-message');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const cancelLogin = document.getElementById('cancel-login');
+        const studentForm = document.getElementById('student-form');
+        const studentFormTitle = document.getElementById('student-form-title');
+        const btnSubmitStudent = document.getElementById('btn-submit-student');
+        const btnReset = document.getElementById('btn-reset');
+        const btnCancelEdit = document.getElementById('btn-cancel-edit');
+        const formMessage = document.getElementById('form-message');
+        const studentIdEdit = document.getElementById('student_id_edit');
+        const photoInput = document.getElementById('photo');
+        const adminListBody = document.getElementById('admin-list-body');
+        const btnRefresh = document.getElementById('btn-refresh');
+        const btnExport = document.getElementById('btn-export');
+        const btnPreviewForm = document.getElementById('btn-preview-form');
+
+        // Modal elements
+        const modal = document.getElementById('student-preview-modal');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn'); // Main 'X' for Student Preview
+        const formPreviewModal = document.getElementById('form-preview-modal');
+        const formPreviewBody = document.getElementById('form-preview-body');
+        const formPreviewCloseBtn = document.getElementById('form-preview-close-btn'); // Main 'X' for Form Preview
+
+        // Toast container
+        const toastContainer = document.getElementById('toast-container');
+
+        // Global variables
+        let cachedStudents = [];
+
+        // Utility functions
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Hide and remove toast after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"'/]/g, function (s) {
+                const entityMap = {
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;'
+                };
+                return entityMap[s];
+            });
+        }
+
+        function getStatusHtml(status) {
+            status = (status || 'pending').toLowerCase();
+            switch (status) {
+                case 'verified': return '<span class="flex items-center gap-1"><i class="fas fa-check-circle"></i> Verified</span>';
+                case 'pending': return '<span class="flex items-center gap-1"><i class="fas fa-clock"></i> Pending</span>';
+                case 'rejected': return '<span class="flex items-center gap-1"><i class="fas fa-times-circle"></i> Rejected</span>';
+                case 'under_review': return '<span class="flex items-center gap-1"><i class="fas fa-search"></i> Under Review</span>';
+                default: return '<span class="flex items-center gap-1"><i class="fas fa-clock"></i> Pending</span>';
+            }
+        }
+
+        function getBorderClass(status) {
+            status = (status || 'pending').toLowerCase();
+            if (status === 'verified') return 'border-verified';
+            if (status === 'pending') return 'border-pending';
+            if (status === 'rejected') return 'border-rejected';
+            if (status === 'under_review') return 'border-review';
+            return '';
+        }
+
+        // Event listeners
+        navSearch.addEventListener('click', () => showSection('search'));
+        btnLogin.addEventListener('click', () => showSection('login'));
+        cancelLogin?.addEventListener('click', () => showSection('search'));
+        searchBtn.addEventListener('click', async () => { await doSearch(searchInput.value.trim()); });
+        clearSearch.addEventListener('click', () => { 
+            searchInput.value = ''; 
+            renderSearchResults([]); 
+        });
+        btnRefresh.addEventListener('click', loadStudentsAdmin);
+        btnExport.addEventListener('click', exportStudentsToCsv);
+        btnReset.addEventListener('click', () => resetForm());
+        btnCancelEdit.addEventListener('click', () => resetForm());
+        btnPreviewForm.addEventListener('click', showFormPreview);
+        dropdownBtnAdmin.addEventListener('click', () => { 
+            userDropdownMenu.classList.add('hidden'); 
+            checkAuthAndShowAdmin(); 
+        });
+        dropdownBtnSettingsLogout.addEventListener('click', handleLogout);
+        userDropdownToggle.addEventListener('click', () => { userDropdownMenu.classList.toggle('hidden'); });
+
+        // FIX: Ensure the main modal close buttons work
+        modalCloseBtn.addEventListener('click', () => { modal.classList.add('hidden'); });
+        formPreviewCloseBtn.addEventListener('click', () => { formPreviewModal.classList.add('hidden'); });
+
+        // Search input event listener for Enter key
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchBtn.click();
+            }
+        });
+
+        // Initialize the application
+        (async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) onSignIn(session.user.email);
+            else onSignOut();
+            showSection('search');
+            await preloadStudents();
+            renderSearchResults([]);
+        })();
+
+        // Navigation and authentication functions
+        function setActiveNavButton(sectionName) {
+            document.querySelectorAll('#main-nav-buttons button').forEach(btn => {
+                btn.classList.remove('nav-active');
+            });
+            
+            if (sectionName === 'search') {
+                navSearch.classList.add('nav-active');
+            }
+        }
+        
+        function showSection(name) {
+            sectionSearch.classList.add('hidden');
+            sectionLogin.classList.add('hidden');
+            sectionAdmin.classList.add('hidden');
+            
+            userDropdownMenu.classList.add('hidden');
+
+            if (name === 'search') sectionSearch.classList.remove('hidden');
+            if (name === 'login') sectionLogin.classList.remove('hidden');
+            if (name === 'admin') sectionAdmin.classList.remove('hidden');
+            
+            setActiveNavButton(name);
+        }
+
+        function onSignIn(email) {
+            btnLogin.classList.add('hidden');
+            userDropdownToggle.classList.remove('hidden');
+            sessionEmail.textContent = email;
+            // showToast(`Welcome back, ${email}`, 'success'); // Commented out to reduce initial clutter
+        }
+
+        function onSignOut() {
+            btnLogin.classList.remove('hidden');
+            userDropdownToggle.classList.add('hidden');
+            userDropdownMenu.classList.add('hidden');
+            showSection('search');
+        }
+
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            onSignOut();
+            showSection('search');
+            searchInput.value = '';
+            renderSearchResults([]);
+            showToast('You have been logged out successfully', 'info');
+        }
+
+        async function checkAuthAndShowAdmin() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) showSection('login');
+            else { 
+                onSignIn(session.user.email); 
+                showSection('admin'); 
+                await loadStudentsAdmin(); 
+            }
+        }
+
+        // Login functionality
+        loginForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.classList.add('hidden');
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                
+                if (data?.user) {
+                    onSignIn(data.user.email);
+                    showSection('admin');
+                    await loadStudentsAdmin();
+                    await preloadStudents();
+                    showToast('Login successful!', 'success');
+                } else {
+                    throw new Error('Login failed: Invalid credentials.');
+                }
+            } catch (error) {
+                console.error("Login Error:", error);
+                loginError.textContent = error.message.includes('Invalid login credentials') 
+                    ? 'Invalid Email or Password' 
+                    : error.message;
+                loginError.classList.remove('hidden');
+                showToast('Login failed. Please check your credentials.', 'error');
+            }
+        });
+
+        // Data management functions
+        async function preloadStudents() {
+            try {
+                const { data } = await supabase.from('students').select('*').order('created_at', { ascending: false }).limit(1000);
+                cachedStudents = data || [];
+            } catch (err) {
+                console.error("Preload failed:", err);
+                cachedStudents = [];
+            }
+        }
+
+        async function doSearch(q) {
+            initialSearchMessage.classList.add('hidden');
+            
+            // Show search animation
+            searchResults.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="search-animation mb-4">
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p class="text-lg text-[--muted]">Searching records...</p>
+                </div>
+            `;
+            
+            if (!q) {
+                renderSearchResults([]);
+                return;
+            }
+
+            const lower = q.toLowerCase();
+            
+            // Local search first
+            let results = cachedStudents.filter(s =>
+                (s.name || '').toLowerCase().includes(lower) ||
+                (s.roll_number || '').toLowerCase() === lower ||
+                (s.student_id || '').toLowerCase() === lower
+            );
+
+            // Database search if local cache is empty or for a more comprehensive search
+            if (results.length === 0 || results.length < 5) { // Prioritize fresh search if few or no results locally
+                const { data, error } = await supabase.from('students').select('*').or(`name.ilike.%${q}%,roll_number.eq.${q},student_id.eq.${q}`).order('created_at', { ascending: false }).limit(200);
+                
+                if (error) {
+                    searchResults.innerHTML = `<div class="text-red-600 p-4 text-center">Search failed: ${error.message}</div>`;
+                    showToast('Search failed. Please try again.', 'error');
+                    return;
+                }
+                
+                results = data;
+                // Update cache with new results
+                results.forEach(s => {
+                    if (!cachedStudents.some(cs => cs.id === s.id)) {
+                        cachedStudents.push(s);
+                    }
+                });
+            }
+
+            if (results.length === 0) {
+                searchResults.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-4xl text-[--muted] mb-4"></i>
+                        <p class="text-lg text-[--muted]">No students found matching "${escapeHtml(q)}".</p>
+                    </div>
+                `;
+                return;
+            }
+
+            renderSearchResults(results);
+            showToast(`Found ${results.length} student(s) matching your search`, 'success');
+        }
+
+        function renderSearchResults(list) {
+            searchResults.innerHTML = '';
+            
+            if (!list || list.length === 0) {
+                if (searchInput.value.trim() === '') {
+                    initialSearchMessage.classList.remove('hidden');
+                    return;
+                }
+                searchResults.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-4xl text-[--muted] mb-4"></i>
+                        <p class="text-lg text-[--muted]">No students found matching your query.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            initialSearchMessage.classList.add('hidden');
+
+            list.forEach(s => {
+                const status = (s.verification_status || 'pending').toLowerCase();
+                const badgeClass = status === 'verified' ? 'badge-verified' : status === 'pending' ? 'badge-pending' : status === 'rejected' ? 'badge-rejected' : 'badge-review';
+                const borderClass = getBorderClass(status);
+                const photoUrl = escapeHtml(s.photo_url) || 'https://via.placeholder.com/140x140?text=No+Photo';
+
+                const studentCard = document.createElement('div');
+                studentCard.className = `search-result-card card-hover ${borderClass}`;
+                studentCard.innerHTML = `
+                    <div class="sm:col-span-1 flex flex-col items-center justify-start pt-2">
+                        <img src="${photoUrl}" class="w-28 h-28 object-cover rounded-full shadow-lg mb-3 border-2 border-gray-100">
+                        <span class="status-badge ${badgeClass}">${getStatusHtml(status)}</span>
+                    </div>
+                    <div class="sm:col-span-1 w-full">
+                        <div class="flex items-start mb-4 border-b border-gray-200 pb-2">
+                            <h3 class="text-2xl font-bold text-[--accent]">${escapeHtml(s.name)}</h3>
+                        </div>
+                        
+                        <div class="student-detail-grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="detail-card !border-l-4 !border-l-[--accent-dark]">
+                                <div class="detail-label"><i class="fas fa-id-badge"></i>Student ID</div>
+                                <div class="detail-value">${escapeHtml(s.student_id || '-')}</div>
+                            </div>
+                            <div class="detail-card !border-l-4 !border-l-[--accent-dark]">
+                                <div class="detail-label"><i class="fas fa-hashtag"></i>Roll Number</div>
+                                <div class="detail-value">${escapeHtml(s.roll_number || '-')}</div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-label"><i class="fas fa-school"></i>Class/Grade</div>
+                                <div class="detail-value">${escapeHtml(s.class || '-')}</div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-label"><i class="fas fa-user-tie"></i>Father's Name</div>
+                                <div class="detail-value">${escapeHtml(s.father_name || '-')}</div>
+                            </div>
+                            <div class="detail-card md:col-span-2">
+                                <div class="detail-label"><i class="fas fa-map-marker-alt"></i>Address</div>
+                                <div class="detail-value">${escapeHtml(s.address || 'Address not provided.')}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end w-full border-t pt-4 gap-3">
+                            <button class="btn-primary preview-btn" data-id="${s.id}">
+                                <i class="fas fa-eye fa-lg"></i> Full Preview
+                            </button>
+                            <button class="btn-secondary print-btn" data-id="${s.id}">
+                                <i class="fas fa-file-pdf fa-lg"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+                `;
+                searchResults.appendChild(studentCard);
+            });
+
+            // Add event listeners to buttons
+            document.querySelectorAll('.print-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.closest('button').getAttribute('data-id');
+                    const student = list.find(x => String(x.id) === String(id));
+                    if (student) {
+                        await generatePdfForStudent(student);
+                        showToast('PDF generated successfully!', 'success');
+                    } else {
+                        showToast('Student record not found for PDF generation.', 'error');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('button').getAttribute('data-id');
+                    const student = list.find(x => String(x.id) === String(id));
+                    if (student) {
+                        showStudentPreviewModal(student);
+                    } else {
+                        showToast('Student record not found.', 'error');
+                    }
+                });
+            });
+        }
+
+        function showStudentPreviewModal(student) {
+            const status = (student.verification_status || 'pending').toLowerCase();
+            const badgeClass = status === 'verified' ? 'badge-verified' : status === 'pending' ? 'badge-pending' : status === 'rejected' ? 'badge-rejected' : 'badge-review';
+            const photoUrl = escapeHtml(student.photo_url) || 'https://via.placeholder.com/100x100?text=No+Photo';
+
+            modalBody.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6 mb-6 items-center md:items-start border-b pb-4">
+                    <img src="${photoUrl}" class="w-32 h-32 object-cover rounded-full shadow-lg flex-shrink-0 border-4 border-gray-200">
+                    <div class="text-center md:text-left flex-1">
+                        <h4 class="text-3xl font-extrabold text-[--accent] mb-1">${escapeHtml(student.name)}</h4>
+                        <div class="text-lg text-gray-600 font-medium">ID: ${escapeHtml(student.student_id)} | Roll No: ${escapeHtml(student.roll_number)}</div>
+                        <span class="status-badge ${badgeClass} mt-3 text-lg">${getStatusHtml(status)}</span>
+                    </div>
+                </div>
+                
+                <div class="student-detail-grid">
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-school"></i>Class/Grade</div>
+                        <div class="detail-value">${escapeHtml(student.class || '-')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-brain"></i>IQ Level</div>
+                        <div class="detail-value">${escapeHtml(student.iq_level || '-')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-user-tie"></i>Father's Name</div>
+                        <div class="detail-value">${escapeHtml(student.father_name || '-')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-phone"></i>Father's Contact</div>
+                        <div class="detail-value">${escapeHtml(student.father_contact || '-')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-calendar-alt"></i>Date of Birth</div>
+                        <div class="detail-value">${escapeHtml(student.dob || 'N/A')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-venus-mars"></i>Gender</div>
+                        <div class="detail-value">${escapeHtml(student.gender || 'N/A')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-tint"></i>Blood Group</div>
+                        <div class="detail-value">${escapeHtml(student.blood_group || 'N/A')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-phone-square-alt"></i>Student Contact</div>
+                        <div class="detail-value">${escapeHtml(student.contact_number || 'N/A')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-envelope"></i>Email Address</div>
+                        <div class="detail-value">${escapeHtml(student.email_student || 'N/A')}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-calendar-check"></i>Admission Date</div>
+                        <div class="detail-value">${escapeHtml(student.admission_date || 'N/A')}</div>
+                    </div>
+                    <div class="detail-card md:col-span-3">
+                        <div class="detail-label"><i class="fas fa-map-marker-alt"></i>Complete Address</div>
+                        <div class="detail-value">${escapeHtml(student.address || 'Address not provided.')}</div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-end gap-3 pt-4 border-t">
+                    <button class="btn-primary" id="modal-print-btn">
+                        <i class="fas fa-file-pdf fa-lg mr-2"></i> Download PDF
+                    </button>
+                    <button class="btn-secondary" id="modal-close-btn-2">
+                        <i class="fas fa-times fa-lg mr-2"></i> Close
+                    </button>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            
+            // Add event listeners to modal buttons (for the button inside dynamic content)
+            document.getElementById('modal-print-btn').addEventListener('click', async () => {
+                await generatePdfForStudent(student);
+                modal.classList.add('hidden');
+            });
+            
+            document.getElementById('modal-close-btn-2').addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        }
+
+        // ... (showFormPreview function remains the same, ensuring close button inside dynamic content works) ...
+
+        function showFormPreview() {
+            // Collect form data
+            const formData = {
+                name: document.getElementById('name').value || 'Not provided',
+                roll_number: document.getElementById('roll_number').value || 'Not provided',
+                class: document.getElementById('class').value || 'Not provided',
+                father_name: document.getElementById('father_name').value || 'Not provided',
+                father_contact: document.getElementById('father_contact').value || 'Not provided',
+                contact_number: document.getElementById('contact_number').value || 'Not provided',
+                email_student: document.getElementById('email_student').value || 'Not provided',
+                gender: document.getElementById('gender').value || 'Not provided',
+                blood_group: document.getElementById('blood_group').value || 'Not provided',
+                dob: document.getElementById('dob').value || 'Not provided',
+                admission_date: document.getElementById('admission_date').value || 'Not provided',
+                iq_level: document.getElementById('iq_level').value || 'Not provided',
+                verification_status: document.getElementById('verification_status').value || 'pending',
+                address: document.getElementById('address').value || 'Not provided',
+            };
+            
+            const status = formData.verification_status;
+            const badgeClass = status === 'verified' ? 'badge-verified' : status === 'pending' ? 'badge-pending' : status === 'rejected' ? 'badge-rejected' : 'badge-review';
+            
+            formPreviewBody.innerHTML = `
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-blue-800 text-sm"><i class="fas fa-info-circle mr-2"></i>This is a preview of how the student record will appear. The actual record may differ after submission.</p>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-6 mb-6 items-center md:items-start border-b pb-4">
+                    <div class="w-32 h-32 bg-gray-200 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 border-4 border-gray-200">
+                        <i class="fas fa-user text-gray-500 text-4xl"></i>
+                    </div>
+                    <div class="text-center md:text-left flex-1">
+                        <h4 class="text-3xl font-extrabold text-[--accent] mb-1">${escapeHtml(formData.name)}</h4>
+                        <div class="text-lg text-gray-600 font-medium">Roll No: ${escapeHtml(formData.roll_number)}</div>
+                        <span class="status-badge ${badgeClass} mt-3 text-lg">${getStatusHtml(status)}</span>
+                    </div>
+                </div>
+                
+                <div class="student-detail-grid">
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-school"></i>Class/Grade</div>
+                        <div class="detail-value">${escapeHtml(formData.class)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-brain"></i>IQ Level</div>
+                        <div class="detail-value">${escapeHtml(formData.iq_level)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-user-tie"></i>Father's Name</div>
+                        <div class="detail-value">${escapeHtml(formData.father_name)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-phone"></i>Father's Contact</div>
+                        <div class="detail-value">${escapeHtml(formData.father_contact)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-calendar-alt"></i>Date of Birth</div>
+                        <div class="detail-value">${escapeHtml(formData.dob)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-venus-mars"></i>Gender</div>
+                        <div class="detail-value">${escapeHtml(formData.gender)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-tint"></i>Blood Group</div>
+                        <div class="detail-value">${escapeHtml(formData.blood_group)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-phone-square-alt"></i>Student Contact</div>
+                        <div class="detail-value">${escapeHtml(formData.contact_number)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-envelope"></i>Email Address</div>
+                        <div class="detail-value">${escapeHtml(formData.email_student)}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label"><i class="fas fa-calendar-check"></i>Admission Date</div>
+                        <div class="detail-value">${escapeHtml(formData.admission_date)}</div>
+                    </div>
+                    <div class="detail-card md:col-span-3">
+                        <div class="detail-label"><i class="fas fa-map-marker-alt"></i>Complete Address</div>
+                        <div class="detail-value">${escapeHtml(formData.address)}</div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end gap-3 pt-4 border-t">
+                    <button class="btn-secondary" id="form-preview-close-btn-2">
+                        <i class="fas fa-times mr-2"></i> Close
+                    </button>
+                </div>
+            `;
+            
+            formPreviewModal.classList.remove('hidden');
+            
+            // Add event listener to close button inside dynamic content
+            document.getElementById('form-preview-close-btn-2').addEventListener('click', () => {
+                formPreviewModal.classList.add('hidden');
+            });
+        }
+
+
+        // ... (remaining JavaScript functions for Admin, PDF, etc., are unchanged and correct) ...
+
+        async function loadStudentsAdmin() {
+            adminListBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="loading-container">
+                        <i class="fas fa-spinner loading-icon mr-2"></i> Loading students...
+                    </td>
+                </tr>
+            `;
+            
+            try {
+                const { data, error } = await supabase.from('students').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                cachedStudents = data;
+                renderAdminList(data);
+            } catch (err) {
+                console.error('Failed to load students for admin:', err);
+                adminListBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-red-600">
+                            <i class="fas fa-exclamation-circle mr-2"></i> Error loading students: ${err.message}
+                        </td>
+                    </tr>
+                `;
+                showToast('Failed to load students. Please try again.', 'error');
+            }
+        }
+
+        function renderAdminList(list) {
+            adminListBody.innerHTML = '';
+            
+            if (!list || list.length === 0) {
+                adminListBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-[--muted]">
+                            <i class="fas fa-user-graduate text-2xl mb-2 block"></i>
+                            No students found in the database.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            list.forEach(s => {
+                const status = (s.verification_status || 'pending').toLowerCase();
+                const badgeClass = status === 'verified' ? 'badge-verified' : status === 'pending' ? 'badge-pending' : status === 'rejected' ? 'badge-rejected' : 'badge-review';
+                const photoUrl = escapeHtml(s.photo_url) || 'https://via.placeholder.com/40x40?text=P';
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors';
+                row.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <img src="${photoUrl}" alt="Photo" class="w-10 h-10 object-cover rounded-md border border-gray-200">
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap font-medium">
+                        ${escapeHtml(s.name)}
+                        <div class="text-xs text-[--muted]">ID: ${escapeHtml(s.student_id ? s.student_id.slice(0, 8) : s.id)}</div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(s.roll_number)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="status-badge ${badgeClass}">${getStatusHtml(status)}</span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
+                        <button class="text-blue-600 hover:text-blue-800 preview-btn-admin p-1" data-id="${s.id}" title="Preview">
+                            <i class="fas fa-eye fa-lg"></i>
+                        </button>
+                        <button class="text-blue-600 hover:text-blue-800 pdf-btn p-1" data-id="${s.id}" title="Download PDF">
+                            <i class="fas fa-file-pdf fa-lg"></i>
+                        </button>
+                        <button class="text-[--accent] hover:text-teal-700 edit-btn p-1" data-id="${s.id}" title="Edit">
+                            <i class="fas fa-edit fa-lg"></i>
+                        </button>
+                    </td>
+                `;
+                adminListBody.appendChild(row);
+            });
+
+            // Add event listeners to action buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('button').getAttribute('data-id');
+                    const student = cachedStudents.find(x => String(x.id) === String(id));
+                    if (student) {
+                        openEditForm(student);
+                        showToast(`Editing student: ${student.name}`, 'info');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.pdf-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.closest('button').getAttribute('data-id');
+                    const student = cachedStudents.find(x => String(x.id) === String(id));
+                    if (student) {
+                        await generatePdfForStudent(student);
+                        showToast('PDF generated successfully!', 'success');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.preview-btn-admin').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('button').getAttribute('data-id');
+                    const student = cachedStudents.find(x => String(x.id) === String(id));
+                    if (student) showStudentPreviewModal(student);
+                });
+            });
+        }
+
+        function openEditForm(student) {
+            studentIdEdit.value = student.id;
+            document.getElementById('name').value = student.name || '';
+            document.getElementById('roll_number').value = student.roll_number || '';
+            document.getElementById('email_student').value = student.email_student || '';
+            document.getElementById('gender').value = student.gender || '';
+            document.getElementById('class').value = student.class || '';
+            document.getElementById('father_name').value = student.father_name || '';
+            document.getElementById('father_contact').value = student.father_contact || '';
+            document.getElementById('contact_number').value = student.contact_number || '';
+            document.getElementById('blood_group').value = student.blood_group || '';
+            document.getElementById('dob').value = student.dob || '';
+            document.getElementById('admission_date').value = student.admission_date || '';
+            document.getElementById('iq_level').value = student.iq_level || '';
+            document.getElementById('verification_status').value = student.verification_status || 'pending';
+            document.getElementById('address').value = student.address || '';
+
+            studentFormTitle.textContent = `Edit Student: ${student.name}`;
+            btnSubmitStudent.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            btnSubmitStudent.classList.remove('bg-[--accent]', 'hover:opacity-90');
+            btnSubmitStudent.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            btnCancelEdit.classList.remove('hidden');
+            photoInput.required = false;
+
+            document.getElementById('section-admin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            studentForm.reset();
+            studentIdEdit.value = '';
+            studentFormTitle.textContent = 'Add New Student';
+            btnSubmitStudent.innerHTML = '<i class="fas fa-plus-circle"></i> Add Student';
+            btnSubmitStudent.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btnSubmitStudent.classList.add('bg-[--accent]', 'hover:opacity-90');
+            btnCancelEdit.classList.add('hidden');
+            formMessage.classList.add('hidden');
+            photoInput.required = true;
+            
+            showToast('Form has been reset', 'info');
+        }
+
+        // Student form submission
+        studentForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            formMessage.classList.add('hidden');
+            btnSubmitStudent.disabled = true;
+            btnSubmitStudent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            const isEdit = !!studentIdEdit.value;
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                roll_number: document.getElementById('roll_number').value.trim(),
+                email_student: document.getElementById('email_student').value.trim() || null,
+                gender: document.getElementById('gender').value || null,
+                class: document.getElementById('class').value.trim() || null,
+                father_name: document.getElementById('father_name').value.trim() || null,
+                father_contact: document.getElementById('father_contact').value.trim() || null,
+                contact_number: document.getElementById('contact_number').value.trim() || null,
+                blood_group: document.getElementById('blood_group').value.trim() || null,
+                dob: document.getElementById('dob').value || null,
+                admission_date: document.getElementById('admission_date').value || null,
+                iq_level: document.getElementById('iq_level').value.trim() || null,
+                verification_status: document.getElementById('verification_status').value,
+                address: document.getElementById('address').value.trim() || null,
+            };
+            const photoFile = photoInput.files[0];
+
+            try {
+                if (photoFile) {
+                    const fileExt = photoFile.name.split('.').pop();
+                    const fileName = `${formData.roll_number}_${Date.now()}.${fileExt}`;
+                    const filePath = `public/${fileName}`;
+
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from(BUCKET_NAME)
+                        .upload(filePath, photoFile, {
+                            cacheControl: '3600',
+                            upsert: false,
+                            contentType: photoFile.type
+                        });
+
+                    if (uploadError) {
+                        if (uploadError.message.includes('CORS') || uploadError.message.includes('policy')) {
+                            throw new Error(`Storage configuration error: ${uploadError.message}. Check Supabase Storage CORS settings and bucket policies.`);
+                        }
+                        throw new Error(`Photo upload failed: ${uploadError.message}`);
+                    }
+
+                    const { data: { publicUrl } } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                    formData.photo_url = publicUrl;
+                }
+
+                let dbResponse;
+                if (isEdit) {
+                    dbResponse = await supabase.from('students').update(formData).eq('id', studentIdEdit.value).select();
+                    showToast(`Student "${formData.name}" updated successfully!`, 'success');
+                } else {
+                    const uniqueId = `PN-${Date.now().toString().slice(-8)}`;
+                    dbResponse = await supabase.from('students').insert([{ ...formData, student_id: uniqueId }]).select();
+                    showToast(`Student "${formData.name}" added successfully with ID: ${uniqueId}`, 'success');
+                }
+
+                if (dbResponse.error) throw dbResponse.error;
+
+                resetForm();
+                await preloadStudents();
+                if (sectionAdmin.classList.contains('hidden') === false) {
+                    await loadStudentsAdmin();
+                }
+            } catch (error) {
+                console.error('Submission Error:', error);
+                showToast(`Operation failed: ${error.message}`, 'error');
+            } finally {
+                btnSubmitStudent.disabled = false;
+                btnSubmitStudent.innerHTML = isEdit 
+                    ? '<i class="fas fa-save"></i> Save Changes' 
+                    : '<i class="fas fa-plus-circle"></i> Add Student';
+            }
+        });
+
+        // CSV Export
+        async function exportStudentsToCsv() {
+            if (!cachedStudents.length) {
+                showToast('No student data to export.', 'error');
+                return;
+            }
+            
+            const headers = ['id', 'student_id', 'name', 'roll_number', 'class', 'gender', 'dob', 'blood_group', 'father_name', 'father_contact', 'contact_number', 'email_student', 'address', 'iq_level', 'verification_status', 'created_at', 'photo_url'];
+            
+            let csv = headers.join(',') + '\n';
+            
+            cachedStudents.forEach(row => {
+                const values = headers.map(header => {
+                    const value = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+                    return `"${value.replace(/"/g, '""')}"`;
+                });
+                csv += values.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `students_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Student data exported successfully!', 'success');
+        }
+
+        // PDF Generation (Modernized)
+        async function generatePdfForStudent(student) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Configuration
+            const ACCENT_COLOR = '#0ea5a4';
+            const ACCENT_DARK = '#0d9488';
+            const TEXT_COLOR = '#0f172a';
+            const MUTED_COLOR = '#64748b';
+            
+            const PAGE_WIDTH = doc.internal.pageSize.getWidth();
+            const MARGIN = 15;
+            const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2);
+            let y_pos = MARGIN;
+
+            // --- Page Setup ---
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, PAGE_WIDTH, doc.internal.pageSize.getHeight(), 'F');
+            doc.setDrawColor(ACCENT_COLOR);
+            doc.setLineWidth(1);
+            doc.rect(5, 5, PAGE_WIDTH - 10, doc.internal.pageSize.getHeight() - 10, 'S'); // Outer border
+
+            // --- Header Bar ---
+            doc.setFillColor(ACCENT_COLOR);
+            doc.rect(MARGIN, y_pos, CONTENT_WIDTH, 10, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(255, 255, 255);
+            doc.text('PAKISTAN NATIONAL STUDENTS DATABASE - OFFICIAL RECORD', PAGE_WIDTH / 2, y_pos + 6, { align: 'center' });
+            y_pos += 15;
+
+            // --- Student Photo and Primary Information ---
+            const PHOTO_SIZE = 40;
+            const PHOTO_X = MARGIN + 5;
+            const PHOTO_Y = y_pos;
+            
+            const placeholderBase64 = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="#e2e8f0"/><text x="200" y="210" font-size="50" fill="#64748b" text-anchor="middle">NO PHOTO</text></svg>');
+            let finalPhotoBase64 = placeholderBase64;
+            
+            // Photo handling
+            try {
+                const photoBase64 = await urlToBase64(student.photo_url);
+                if (photoBase64) {
+                    finalPhotoBase64 = photoBase64;
+                }
+            } catch (error) {
+                console.warn('Could not load student photo for PDF, using placeholder:', error);
+            }
+            
+            try {
+                // Determine format and add image
+                let format = 'JPEG';
+                if (finalPhotoBase64.startsWith('data:image/png')) format = 'PNG';
+                
+                // Add image (using PHOTO_SIZE for square crop effect if needed, but jspdf handles aspect ratio if dimensions are different)
+                doc.addImage(finalPhotoBase64, format, PHOTO_X, PHOTO_Y, PHOTO_SIZE, PHOTO_SIZE);
+                
+                // Optional: Draw a circle mask or border for modern look (can be complex, simpler border used here)
+                doc.setDrawColor(ACCENT_DARK);
+                doc.setLineWidth(1);
+                doc.circle(PHOTO_X + PHOTO_SIZE / 2, PHOTO_Y + PHOTO_SIZE / 2, PHOTO_SIZE / 2, 'S');
+            } catch (e) {
+                doc.setDrawColor(MUTED_COLOR);
+                doc.rect(PHOTO_X, PHOTO_Y, PHOTO_SIZE, PHOTO_SIZE, 'S');
+                doc.setTextColor(MUTED_COLOR);
+                doc.setFontSize(8);
+                doc.text("Photo Unavailable", PHOTO_X + PHOTO_SIZE / 2, PHOTO_Y + PHOTO_SIZE / 2, { align: 'center' });
+            }
+
+            // Primary details
+            let detail_text_x = PHOTO_X + PHOTO_SIZE + 8;
+            let current_detail_y = PHOTO_Y + 5;
+
+            doc.setTextColor(ACCENT_DARK);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${student.name || 'N/A'}`, detail_text_x, current_detail_y);
+            current_detail_y += 8;
+
+            doc.setTextColor(MUTED_COLOR);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Student ID: ${student.student_id || '-'} | Roll Number: ${student.roll_number || '-'} | Class: ${student.class || '-'}`, detail_text_x, current_detail_y);
+            current_detail_y += 6;
+
+            // Status Badge in PDF
+            const status = (student.verification_status || 'pending').toLowerCase();
+            let status_color = [245, 158, 11]; // Pending
+            let status_text = 'PENDING';
+            if (status === 'verified') { status_color = [16, 185, 129]; status_text = 'VERIFIED'; }
+            else if (status === 'rejected') { status_color = [239, 68, 68]; status_text = 'REJECTED'; }
+            else if (status === 'under_review') { status_color = [59, 130, 246]; status_text = 'UNDER REVIEW'; }
+
+            doc.setFillColor(status_color[0], status_color[1], status_color[2]);
+            doc.roundedRect(detail_text_x, current_detail_y, doc.getStringUnitWidth(status_text) * doc.internal.getFontSize() / doc.internal.scaleFactor + 4, 6, 1, 1, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text(status_text, detail_text_x + 2, current_detail_y + 4);
+            
+            y_pos = Math.max(y_pos + PHOTO_SIZE + 10, current_detail_y + 10);
+
+            // --- Details Section Title ---
+            doc.setTextColor(ACCENT_COLOR);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('FULL STUDENT RECORD', MARGIN, y_pos);
+            doc.setDrawColor(ACCENT_COLOR);
+            doc.setLineWidth(0.3);
+            doc.line(MARGIN, y_pos + 1, MARGIN + CONTENT_WIDTH, y_pos + 1);
+            y_pos += 4;
+
+            // Data for the table
+            const data = [
+                ["Father's Name", student.father_name || '-'],
+                ["Father's Contact", student.father_contact || '-'],
+                ["Student Contact", student.contact_number || '-'],
+                ["Student Email", student.email_student || '-'],
+                ["Date of Birth", student.dob || 'N/A'],
+                ["Gender", student.gender || 'N/A'],
+                ["Blood Group", student.blood_group || 'N/A'],
+                ["IQ Level", student.iq_level || 'N/A'],
+                ["Admission Date", student.admission_date || 'N/A'],
+                ["System ID", student.student_id || '-']
+            ];
+
+            doc.autoTable({
+                startY: y_pos,
+                body: data,
+                theme: 'grid',
+                styles: { fontSize: 10, cellPadding: 3, textColor: TEXT_COLOR, lineColor: 220, lineWidth: 0.1 },
+                columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50, fillColor: [245, 245, 245] }, 1: { cellWidth: 'auto', fillColor: [255, 255, 255] } },
+                margin: { left: MARGIN, right: MARGIN }
+            });
+
+            // Address section below the main table
+            let addressY = doc.autoTable.previous.finalY + 5;
+            doc.setTextColor(ACCENT_COLOR);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Address Details', MARGIN, addressY);
+            addressY += 4;
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setDrawColor(200);
+            doc.setFillColor(250, 250, 250);
+            doc.roundedRect(MARGIN, addressY, CONTENT_WIDTH, 10, 2, 2, 'FD'); // Address box
+            
+            const addressText = student.address || 'Address not provided.';
+            const splitAddress = doc.splitTextToSize(addressText, CONTENT_WIDTH - 4);
+            doc.text(splitAddress, MARGIN + 2, addressY + 4);
+
+            // Footer
+            let footerY = doc.internal.pageSize.getHeight() - 10;
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(100, 100, 100);
+            const cleanStatusText = getStatusHtml(status).replace(/<[^>]*>/g, '').trim();
+            doc.text(`Generated on: ${new Date().toLocaleDateString()} | Admin Portal | Status: ${cleanStatusText}`, MARGIN, footerY);
+            doc.text('© Pakistan National Students Database', PAGE_WIDTH - MARGIN, footerY, { align: 'right' });
+
+            // Blurry Watermark "OFFICIAL"
+            applyWatermark(doc, 'OFFICIAL');
+
+            // Save the PDF
+            doc.save(`${(student.roll_number || student.student_id || 'Student').replace(/\s/g, '_')}_Record.pdf`);
+        }
+
+        // Helper function for PDF watermark
+        function applyWatermark(doc, text) {
+            const pages = doc.internal.pages.length;
+            for (let i = 1; i <= pages; i++) {
+                doc.setPage(i);
+                doc.setTextColor(192, 192, 192);
+                doc.setGState(new doc.GState({ opacity: 0.15 }));
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(70);
+                const centerX = doc.internal.pageSize.getWidth() / 2;
+                const centerY = doc.internal.pageSize.getHeight() / 2;
+                doc.text(text, centerX, centerY, null, 45, 'center');
+                doc.setGState(new doc.GState({ opacity: 1.0 }));
+                doc.setTextColor(document.documentElement.style.getPropertyValue('--text-color'));
+            }
+        }
+
+        // Helper function for image conversion (for non-rotated images)
+        async function urlToBase64(url) {
+            if (!url || url.includes('placeholder.com')) return null;
+
+            try {
+                // Use fetch to bypass CORS issues often encountered with Supabase storage if not configured strictly
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to fetch image.');
+                
+                const blob = await response.blob();
+                
+                return await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = (e) => {
+                        console.error("FileReader failed to convert blob:", e);
+                        reject(null);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error("Failed to convert URL to Base64:", error);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>
+
